@@ -3,29 +3,57 @@ var siteFileUtility = require('./siteFileUtility'),
     request = require('sync-request');
 
 function processSites(sites){
-	var errors = [];
+	var badLinks = [];
 	for(var i = 0; i < sites.length; i++){
-		var errorAnchors = [];
+		var badAnchors = [];
 		for(var j = 0; j < sites[i].pages.length; j++){
-			errorAnchors.concat(processSite(sites[i].pages[j], sites[i].whitelist));
+			badAnchors.push(processSite(sites[i].pages[j], sites[i].whitelist));
 			// return map or object of site to error anchors
 		}
-		if(errorAnchors.length > 0){
-			var errorObject = {
+		if(badAnchors.length > 0){
+			badLinks.push({
 				name: sites[i].name,
 				notify: sites[i].notify,
-				errors: errorAnchors
-			};
-			errors.push(errorObject);
+				badLinks: badAnchors
+			});
 		}
 	}
-	return errors;
+	return badLinks;
+}
+
+function processSite(url, whitelist){
+	var badLinks = [];
+	try{
+	    var res = request('GET', url);
+	    var pageHtml = res.getBody();
+	    var $ = cheerio.load(pageHtml);
+	    var anchorList = $('a');
+	    for(var i = 0; i < anchorList.length; i++){
+	    	if(!isLinkOkay(anchorList[i].attribs.href, whitelist)){
+	    		badLinks.push(anchorList[i].attribs.href);
+	    	}
+	    }
+	} catch(e) {
+	      console.log("Exception encountered getting page: " + url);
+	}
+	return badLinks;
+}
+
+function isLinkOkay(linkHref, whitelist){
+	for(var i = 0; i < whitelist.length; i++){
+		var pattern = new RegExp(whitelist[i]);
+		if(pattern.test(linkHref)){
+			return true;
+		}
+	}
+	return false;
 }
 
 function processErrors(errors){
-	//send emails to notification contact person
+	//send notifications to notification contact person
 }
 
 var sites = siteFileUtility.getSites();
-var errors = processSites(sites);
-processErrors(errors);
+var badLinks = processSites(sites);
+// processErrors(errors);
+console.log(JSON.stringify(badLinks));
