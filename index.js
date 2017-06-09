@@ -65,22 +65,34 @@ function processNotifications(badLinks){
 				return acc;
 			}
 		},[]);
-		message = "Attention! You have bad links on the following watched sites: <br/>";
+		htmlMessage = "Attention! You have bad links on the following watched sites: <br/>";
+		textMessage = "Attention! You have bad links on the following watched sites: \n";
 		for(var i = 0; i < badLinksForParty.length; i++){
-			message += badLinksForParty[i].name + "<br/>";
+			htmlMessage += badLinksForParty[i].name + "<br/>";
+			textMessage += badLinksForParty[i].name + "\n";
 			for(var j = 0; j < badLinksForParty[i].badLinks.length; j++){
-				message += "-	" + badLinksForParty[i].badLinks[j] + "<br/>";
+				htmlMessage += "-	" + badLinksForParty[i].badLinks[j] + "<br/>";
+				textMessage += "-	" + badLinksForParty[i].badLinks[j] + "\n";
 			}
 		}
-		sendNotification(party, message);
+		notify(party, htmlMessage, textMessage);
 	});
 }
 
-function notify(email, message){
-
+function notify(email, htmlMessage, textMessage){
+	var mailInfo = require('./mailInfo');
+	mailInfo.mailOptions.html = htmlMessage;
+	mailInfo.mailOptions.text = textMessage;
+	mailInfo.mailOptions.to = email;
+	mailInfo.mailOptions.subject = "Bad Links Detected On Watched Sites";
+    mailInfo.transporter.sendMail(mailInfo.mailOptions, function(error, info) {
+        if (error) {
+            return console.log(error);
+        }
+    });
 }
 
 var sites = siteFileUtility.getSites();
 var badLinks = processSites(sites);
-// processNotifications(badLinks);
 console.log(JSON.stringify(badLinks));
+processNotifications(badLinks);

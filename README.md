@@ -38,3 +38,30 @@ example:
 	}
 ]
 ```
+
+What goes in `mailInfo.js`
+--------------------------
+
+You need to create a file in your project directory called `mailInfo.js` this should use [nodemailer (docs here)](https://nodemailer.com/about/) and export a transport and mailOptions.
+
+super simple example:
+```
+let nodemailer = require('nodemailer');
+
+let _transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'whatever@gmail.com',
+        pass: 'yourpassword'
+    }
+});
+
+var _mailOptions = {
+    from: '"LinkWatcher" <whatever@gmail.com>'
+};
+
+module.exports = {
+	transporter: _transporter,
+	mailOptions: _mailOptions
+};
+```
