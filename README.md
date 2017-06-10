@@ -75,6 +75,7 @@ module.exports = {
 TODO
 ----
 
+* Only supply base url in `sites.json` and programatically crawl the site
 * Optionally supply a blacklist of regular expressions
 * Allow notifications by email or on slack channel
 * Get rid of for loops
