@@ -94,5 +94,4 @@ function notify(email, htmlMessage, textMessage){
 
 var sites = siteFileUtility.getSites();
 var badLinks = processSites(sites);
-console.log(JSON.stringify(badLinks));
 processNotifications(badLinks);
