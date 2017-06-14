@@ -1,41 +1,39 @@
 var siteFileUtility = require('./siteFileUtility'),
     cheerio = require('cheerio'),
-    request = require('sync-request');
+    request = require('sync-request'),
+    linkCrawler = require('./crawler.js');
 
-function processSites(sites){
+function processSites(sites, callback){
+	var siteCompleteCounter = sites.length;
 	var badLinks = [];
 	for(var i = 0; i < sites.length; i++){
-		var badAnchors = [];
-		for(var j = 0; j < sites[i].pages.length; j++){
-			badAnchors = badAnchors.concat(processSite(sites[i].pages[j], sites[i].whitelist));
-		}
-		if(badAnchors.length > 0){
-			badLinks.push({
-				name: sites[i].name,
-				notify: sites[i].notify,
-				badLinks: badAnchors
-			});
-		}
+		var site = sites[i];
+		processSite(site.baseUrl, site.whitelist, function(badAnchors){
+			if(badAnchors.length > 0){
+				badLinks.push({
+					name: site.name,
+					notify: site.notify,
+					badLinks: badAnchors
+				});
+			}
+			if(--siteCompleteCounter < 1){
+				callback(badLinks);
+			}
+
+		});
 	}
-	return badLinks;
 }
 
-function processSite(url, whitelist){
+function processSite(url, whitelist, callback){
 	var badLinks = [];
-	try{
-	    var res = request('GET', url);
-	    var pageHtml = res.getBody();
-	    var $ = cheerio.load(pageHtml);
-	    $('a').each(function(i, element){
-	    	var linkOkay = isLinkOkay($(this).attr('href'), whitelist);
-	    	if(!linkOkay){
-	    		badLinks.push($(this).attr('href'));
+	linkCrawler.runCrawler(url, function(crawler){
+		crawler.externalLinksFound.forEach(function(link){
+			if(!isLinkOkay(link, whitelist)){
+	    		badLinks.push(link);
 	    	}
 		});
-	} catch(e) {
-	      console.log("Exception encountered processing page: " + url);
-	}
-	return badLinks;
+		callback(badLinks)
+	});
 }
 
 function isLinkOkay(linkHref, whitelist){
@@ -93,5 +91,7 @@ function notify(email, htmlMessage, textMessage){
 }
 
 var sites = siteFileUtility.getSites();
-var badLinks = processSites(sites);
-processNotifications(badLinks);
+processSites(sites, function(badLinks){
+	processNotifications(badLinks);
+});
+
